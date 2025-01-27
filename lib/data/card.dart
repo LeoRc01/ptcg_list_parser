@@ -13,7 +13,9 @@ class Card {
     required String string,
     required CardType cardType,
   }) {
-    Card getCardFromMatch(RegExpMatch match) {
+    Card? getCardFromRegExp(RegExp reg) {
+      final match = reg.firstMatch(string);
+      if (match == null) return null;
       final quantity = int.parse(match.group(1)!);
       final name = match.group(2)!.trim();
       final set = match.group(3)!;
@@ -27,7 +29,10 @@ class Card {
       );
     }
 
-    Card getEnergyFromMatch(RegExpMatch match) {
+    Card? getEnergyFromRegExp(RegExp reg) {
+      final match = reg.firstMatch(string);
+      if (match == null) return null;
+
       final quantity = int.parse(match.group(1)!);
       final name = match.group(2)!;
 
@@ -41,24 +46,20 @@ class Card {
     }
 
     final regExp = RegExp(r'(\d+)\s+(.+?)\s+([A-Z]+)\s+(\d+)');
+    final energyRegExp = RegExp(r'(\d+)\s+.+?\s+\{([A-Z0-9]+)\}');
 
-    final match = regExp.firstMatch(string);
+    final card = switch (cardType) {
+      CardType.pokemon => getCardFromRegExp(regExp),
+      CardType.trainer => getCardFromRegExp(regExp),
+      CardType.energy =>
+        getCardFromRegExp(regExp) ?? getEnergyFromRegExp(energyRegExp),
+    };
 
-    if (match != null) {
-      return getCardFromMatch(match);
-    } else {
-      // if it fails to match, it needs to be an energy input this way
-      // 3 Basic {D} Energy Energy 24 PH
-      final energyRegExp = RegExp(r'(\d+)\s+.+?\s+\{([A-Z0-9]+)\}');
-
-      final energyMatch = energyRegExp.firstMatch(string);
-
-      if (energyMatch != null) {
-        return getEnergyFromMatch(energyMatch);
-      }
-
+    if (card == null) {
       throw Exception('Could not parse card.');
     }
+
+    return card;
   }
 
   final int quantity;
